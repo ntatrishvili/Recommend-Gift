@@ -1,45 +1,46 @@
-# tests/test_main.py
+import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.database.session import get_db, Base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
-client = TestClient(app)
+TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
-def test_suggest_gifts_success():
-    payload = {
-        "age": 25,
-        "hobbies": ["photography", "traveling"],
-        "favorite_tv_shows": ["Stranger Things", "The Crown"],
-        "budget": 100.00,
-        "relationship": "friend",
-        "additional_preferences": "eco-friendly products"
-    }
+@pytest.fixture(scope="module")
+async def test_db():
+    engine = create_async_engine(TEST_DATABASE_URL)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     
-    response = client.post("/suggest-gifts", json=payload)
+    AsyncTestingSessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+        class_=AsyncSession
+    )
+    
+    yield AsyncTestingSessionLocal()
+    
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+@pytest.mark.asyncio
+async def test_recommendation_flow(test_db):
+    client = TestClient(app)
+    app.dependency_overrides[get_db] = lambda: test_db
+    
+    # Test valid request
+    response = client.post(
+        "/recommend",
+        json={
+            "interests": "tech gadgets",
+            "budget": 200.0,
+            "occasion": "birthday"
+        }
+    )
+    
     assert response.status_code == 200
-    assert "recommendations" in response.json()
-    assert len(response.json()["recommendations"]) > 0
-
-def test_suggest_gifts_no_recommendations():
-    payload = {
-        "age": 5,
-        "hobbies": ["unknown hobby"],
-        "favorite_tv_shows": ["unknown show"],
-        "budget": 5.00,
-        "relationship": "family",
-        "additional_preferences": "unknown preference"
-    }
-    
-    response = client.post("/suggest-gifts", json=payload)
-    assert response.status_code == 404
-    assert response.json()["detail"] == "No gift recommendations found for the given criteria."
-
-def test_suggest_gifts_invalid_input():
-    payload = {
-        "age": "twenty-five",  # Invalid age type
-        "hobbies": ["photography"],
-        "favorite_tv_shows": ["Stranger Things"],
-        "budget": 100.00
-    }
-    
-    response = client.post("/suggest-gifts", json=payload)
-    assert response.status_code == 422  # Unprocessable Entity
+    data = response.json()
+    assert len(data["recommendations"]) == 5
+    assert "search_summary" in data

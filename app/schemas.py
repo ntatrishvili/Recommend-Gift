@@ -1,39 +1,19 @@
-# app/schemas.py
+from pydantic import BaseModel
 from typing import List, Optional
-from pydantic import BaseModel, Field
 
 class GiftRequest(BaseModel):
-    age: int = Field(
-        ..., 
-        json_schema_extra={"example": 25}
-    )
-    hobbies: List[str] = Field(
-        ..., 
-        json_schema_extra={"example": ["photography", "traveling"]}
-    )
-    favorite_tv_shows: List[str] = Field(
-        ..., 
-        json_schema_extra={"example": ["Stranger Things", "The Crown"]}
-    )
-    budget: float = Field(
-        ..., 
-        json_schema_extra={"example": 100.00}
-    )
-    relationship: Optional[str] = Field(
-        None, 
-        json_schema_extra={"example": "friend"}
-    )
-    additional_preferences: Optional[str] = Field(
-        None, 
-        json_schema_extra={"example": "eco-friendly products"}
-    )
+    interests: str
+    budget: float
+    occasion: str
+    recipient_age: Optional[int] = None
 
 class GiftRecommendation(BaseModel):
-    product_name: str
-    price: float
-    product_link: str
-    image_url: str
-    description: str
+    item_name: str
+    price_estimate: float
+    category: str
+    reason: str
+    confidence_score: float
 
-class GiftResponse(BaseModel):
+class RecommendationResponse(BaseModel):
     recommendations: List[GiftRecommendation]
+    search_summary: str

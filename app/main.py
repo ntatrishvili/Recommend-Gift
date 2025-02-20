@@ -1,47 +1,60 @@
-# app/main.py
-from fastapi import FastAPI, HTTPException
-from typing import List
-from .schemas import GiftRequest, GiftResponse, GiftRecommendation
-from .services import generate_gift_categories, fetch_gift_suggestions
-from .logger import logger
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import time
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas import GiftRequest, RecommendationResponse
+from app.services import GiftRecommender
+from app.database.session import get_db, Base
+from app.database.models import GiftSearchLog
+from app.logger import logger
 
-app = FastAPI(
-    title="GiftAI POC",
-    description="An API to suggest gifts based on user preferences.",
-    version="1.0.0"
+app = FastAPI(title="GiftsAI", version="1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["POST"],
+    allow_headers=["*"],
 )
 
-@app.post("/suggest-gifts", response_model=GiftResponse)
-def suggest_gifts(gift_request: GiftRequest):
-    logger.info(f"Received gift request: {gift_request}")
+@app.on_event("startup")
+async def startup():
+    async with get_db() as session:
+        await session.begin()
+        try:
+            await session.run_sync(Base.metadata.create_all)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Database initialization failed: {str(e)}")
 
+@app.post("/recommend", response_model=RecommendationResponse)
+async def recommend_gifts(
+    request: GiftRequest, 
+    db: AsyncSession = Depends(get_db)
+):
+    start_time = time.time()
+    recommender = GiftRecommender()
+    
     try:
-        # Generate gift categories based on user input
+        recommendations = await recommender.generate_recommendations(request)
         
-        categories = generate_gift_categories(
-            age=gift_request.age,
-            hobbies=gift_request.hobbies,
-            favorite_tv_shows=gift_request.favorite_tv_shows,
-            budget=gift_request.budget,
-            relationship=gift_request.relationship or "friend",
-            additional_preferences=gift_request.additional_preferences or ""
+        log_entry = GiftSearchLog(
+            search_params=request.model_dump(),
+            recommendations=[r.model_dump() for r in recommendations],
+            processing_time=time.time() - start_time,
+            model_version=recommender.gpt_model
         )
-        logger.info(f"Generated categories: {categories}")
-
-        # Fetch gift suggestions based on categories and budget
-        recommendations = fetch_gift_suggestions(categories, gift_request.budget)
-        logger.info(f"Fetched {len(recommendations)} recommendations.")
-
-        if not recommendations:
-            raise HTTPException(status_code=404, detail="No gift recommendations found for the given criteria.")
-
-        return GiftResponse(recommendations=recommendations)
-
-    except HTTPException as http_exc:
-        # Re-raise HTTPExceptions without modification
-        logger.error(f"HTTPException occurred: {http_exc.detail}")
-        raise http_exc
+        
+        db.add(log_entry)
+        await db.commit()
+        
+        return {
+            "recommendations": recommendations,
+            "search_summary": f"Generated {len(recommendations)} recommendations"
+        }
+        
     except Exception as e:
-        # Handle unexpected exceptions
-        logger.error(f"Error processing gift request: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        await db.rollback()
+        logger.error(f"API Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Recommendation service error")

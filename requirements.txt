@@ -6,3 +6,6 @@ coverage
 requests
 python-dotenv
 httpx
+sqlalchemy
+openai
+pydantic-settings
