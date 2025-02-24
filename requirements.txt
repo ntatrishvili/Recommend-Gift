@@ -9,3 +9,5 @@ httpx
 sqlalchemy
 openai
 pydantic-settings
+aiosqlite
+pytest-mock
