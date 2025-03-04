@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from app.database.session import engine, Base
 from app.schemas import GiftRequest, RecommendationResponse
-from app.services import GiftService
+from app.services.ai_service import GiftService
 from app.database.session import get_db
 from app.database.models import GiftSearchLog
 from contextlib import asynccontextmanager

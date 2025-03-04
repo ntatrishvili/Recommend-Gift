@@ -11,3 +11,5 @@ openai
 pydantic-settings
 aiosqlite
 pytest-mock
+boto3
+aws-requests-auth
