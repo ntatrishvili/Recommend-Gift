@@ -1,4 +1,3 @@
-# app/schemas.py
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -11,7 +10,7 @@ class GiftRequest(BaseModel):
     budget: float = Field(..., json_schema_extra={"example": 100.00})
     occasion: str = Field(..., json_schema_extra={"example": "birthday"})
     relationship: Optional[str] = Field(
-        None, json_schema_extra={"example": "boyfriend"}
+        None, json_schema_extra={"example": "friend"}
     )
     additional_preferences: Optional[str] = Field(
         None,
