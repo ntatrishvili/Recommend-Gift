@@ -4,7 +4,6 @@ from typing import List
 from openai import AsyncOpenAI
 from app.config import settings
 from app.schemas import GiftRecommendation
-from .amazon_api import AmazonAPI, AmazonAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +14,10 @@ class GiftService:
             raise ValueError("Missing OpenAI API key")
 
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.amazon = AmazonAPI()
         self.gpt_model = "gpt-4"
 
     async def generate_recommendations(self, request) -> List[GiftRecommendation]:
-        """Generate recommendations using OpenAI and verify with Amazon"""
+        """Generate recommendations using OpenAI"""
         try:
             # Step 1: Get AI suggestions
             ai_products = await self._get_ai_product_names(request)
