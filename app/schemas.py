@@ -2,6 +2,11 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+class GiftRequest(BaseModel):
+    interests: str
+    occasion: str
+    budget: float
+
 class GiftRecommendation(BaseModel):
     name: str
     price: float
