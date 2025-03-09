@@ -1,47 +1,55 @@
-# app/main.py
-from fastapi import FastAPI, HTTPException
-from typing import List
-from .schemas import GiftRequest, GiftResponse, GiftRecommendation
-from .services import generate_gift_categories, fetch_gift_suggestions
-from .logger import logger
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
+from app.database.session import engine, Base
+from app.schemas import GiftRequest, RecommendationResponse
+from app.services.ai_service import GiftService
+from app.database.session import get_db
+from app.database.models import GiftSearchLog
+from contextlib import asynccontextmanager
 
-app = FastAPI(
-    title="GiftAI POC",
-    description="An API to suggest gifts based on user preferences.",
-    version="1.0.0"
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["POST"],
+    allow_headers=["*"],
 )
 
-@app.post("/suggest-gifts", response_model=GiftResponse)
-def suggest_gifts(gift_request: GiftRequest):
-    logger.info(f"Received gift request: {gift_request}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    await engine.dispose()
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.post("/recommend", response_model=RecommendationResponse)
+async def recommend_gifts(request: GiftRequest, db: AsyncSession = Depends(get_db)):
+    search_id = str(uuid.uuid4())
+    service = GiftService()
 
     try:
-        # Generate gift categories based on user input
-        
-        categories = generate_gift_categories(
-            age=gift_request.age,
-            hobbies=gift_request.hobbies,
-            favorite_tv_shows=gift_request.favorite_tv_shows,
-            budget=gift_request.budget,
-            relationship=gift_request.relationship or "friend",
-            additional_preferences=gift_request.additional_preferences or ""
+        # Generate recommendations
+        recommendations = await service.generate_recommendations(request)
+
+        # Log to database
+        log_entry = GiftSearchLog(
+            id=search_id,
+            search_params=request.model_dump(),
+            recommendations=[r.model_dump() for r in recommendations],
         )
-        logger.info(f"Generated categories: {categories}")
+        db.add(log_entry)
+        await db.commit()
 
-        # Fetch gift suggestions based on categories and budget
-        recommendations = fetch_gift_suggestions(categories, gift_request.budget)
-        logger.info(f"Fetched {len(recommendations)} recommendations.")
+        return {"recommendations": recommendations, "search_id": search_id}
 
-        if not recommendations:
-            raise HTTPException(status_code=404, detail="No gift recommendations found for the given criteria.")
-
-        return GiftResponse(recommendations=recommendations)
-
-    except HTTPException as http_exc:
-        # Re-raise HTTPExceptions without modification
-        logger.error(f"HTTPException occurred: {http_exc.detail}")
-        raise http_exc
     except Exception as e:
-        # Handle unexpected exceptions
-        logger.error(f"Error processing gift request: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Recommendation failed: {str(e)}")
