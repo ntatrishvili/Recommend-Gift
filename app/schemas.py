@@ -9,9 +9,7 @@ class GiftRequest(BaseModel):
     )
     budget: float = Field(..., json_schema_extra={"example": 100.00})
     occasion: str = Field(..., json_schema_extra={"example": "birthday"})
-    relationship: Optional[str] = Field(
-        None, json_schema_extra={"example": "friend"}
-    )
+    relationship: Optional[str] = Field(None, json_schema_extra={"example": "friend"})
     additional_preferences: Optional[str] = Field(
         None,
         json_schema_extra={"example": "Only eco-friendly products, no food items"},
