@@ -20,9 +20,7 @@ class GiftRequest(BaseModel):
 
 class GiftRecommendation(BaseModel):
     name: str
-    price: float
-    category: str
-    reason: str
+    price: str
     url: Optional[str] = None
     image: Optional[str] = None
 

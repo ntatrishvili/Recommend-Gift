@@ -1,36 +1,46 @@
 import requests
-#from app.config import settings uncomment this line when you integrate this file in the project
+from app.config import settings
 
-def search_amazon(query, category, price):
-    url = f"https://real-time-amazon-data.p.rapidapi.com/search"
-    
-    min_price = price * 0.8
-    max_price = price * 1.2
-    
+async def search_amazon(query, budget):
+    url = "https://real-time-amazon-data.p.rapidapi.com/search"
+
+    min_price = budget * 0.8
+
     querystring = {
         "query": query,
-        # "category": category,
         "min_price": min_price,
-        "max_price": max_price,
+        "max_price": budget,
         "country": "US"
     }
-    
+
     headers = {
-        "X-RapidAPI-Key": "c5faa0505cmsh791dce67e35abdap1b8b3djsn3611a3dd3863", #settings.amazon_api_key should be used when you intagrate this file in the project
+        "X-RapidAPI-Key": settings.amazon_api_key,
         "X-RapidAPI-Host": "real-time-amazon-data.p.rapidapi.com"
     }
-    
+
     response = requests.get(url, headers=headers, params=querystring)
-    
+
     if response.status_code == 200:
         data = response.json()
-        products = data["data"]["products"]
-        sorted_products = sorted(products, key=lambda x: x["product_star_rating"], reverse=True)
-        top_3_products = sorted_products[:3]
-        return top_3_products
-    else:
-        return {"error": "Failed to retrieve data"}
+        # Check if data and products exist to avoid KeyError
+        if not data.get("data", {}).get("products"):
+            return None, None, None
 
-# Example usage
-results = search_amazon("tennis racket", "Sports & Outdoors", 50)
-print(results)
+        products = data["data"]["products"]
+
+        sorted_products = sorted(
+            products,
+            key=lambda x: float(x.get("product_star_rating")) if x.get("product_star_rating") is not None else 0.0,
+            reverse=True
+        )
+
+        top_product = sorted_products[0] if sorted_products else None
+
+        if top_product:
+            return (
+                top_product.get("product_price"),
+                top_product.get("product_url"),
+                top_product.get("product_photo")
+            )
+        
+    return None, None, None
