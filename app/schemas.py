@@ -19,8 +19,12 @@ class GiftRequest(BaseModel):
 class GiftRecommendation(BaseModel):
     name: str = Field(..., json_schema_extra={"example": "Tennis Racket"})
     price: str = Field(..., json_schema_extra={"example": "$50.00"})
-    url: Optional[str] = Field(None, json_schema_extra={"example": "http://example.com/tennis-racket"})
-    image: Optional[str] = Field(None, json_schema_extra={"example": "http://example.com/tennis-racket.jpg"})
+    url: Optional[str] = Field(
+        None, json_schema_extra={"example": "http://example.com/tennis-racket"}
+    )
+    image: Optional[str] = Field(
+        None, json_schema_extra={"example": "http://example.com/tennis-racket.jpg"}
+    )
 
 
 class RecommendationResponse(BaseModel):
