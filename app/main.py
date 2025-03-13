@@ -5,6 +5,7 @@ import uuid
 from app.database.session import engine, Base
 from app.schemas import GiftRequest, RecommendationResponse
 from app.services.ai_service import GiftService
+from app.services.amazon_service import search_amazon
 from app.database.session import get_db
 from app.database.models import GiftSearchLog
 from contextlib import asynccontextmanager
@@ -38,6 +39,17 @@ async def recommend_gifts(request: GiftRequest, db: AsyncSession = Depends(get_d
     try:
         # Generate recommendations
         recommendations = await service.generate_recommendations(request)
+
+        for recommendation in recommendations:
+            product_price, product_url, product_image = await search_amazon(
+                recommendation.name, request.budget
+            )
+
+            recommendation.price = str(product_price) if product_price else "Unknown"
+            recommendation.url = str(product_url) if product_url else "No product found"
+            recommendation.image = (
+                str(product_image) if product_image else "No image available"
+            )
 
         # Log to database
         log_entry = GiftSearchLog(

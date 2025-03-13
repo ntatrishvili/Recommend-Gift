@@ -17,14 +17,16 @@ class GiftRequest(BaseModel):
 
 
 class GiftRecommendation(BaseModel):
-    name: str
-    price: float
-    category: str
-    reason: str
-    url: Optional[str] = None
-    image: Optional[str] = None
+    name: str = Field(..., json_schema_extra={"example": "Tennis Racket"})
+    price: str = Field(..., json_schema_extra={"example": "$50.00"})
+    url: Optional[str] = Field(
+        None, json_schema_extra={"example": "http://example.com/tennis-racket"}
+    )
+    image: Optional[str] = Field(
+        None, json_schema_extra={"example": "http://example.com/tennis-racket.jpg"}
+    )
 
 
 class RecommendationResponse(BaseModel):
     recommendations: List[GiftRecommendation]
-    search_id: str
+    search_id: str = Field(..., json_schema_extra={"example": "12345"})

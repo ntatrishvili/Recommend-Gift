@@ -27,7 +27,6 @@ class GiftService:
 
         except Exception as e:
             logger.error(f"OpenAI API failed: {str(e)}")
-            return await self._get_fallback_ai_recommendations(request)
 
     async def _get_ai_product_names(self, request) -> List[str]:
         """Get product names from OpenAI"""
@@ -59,9 +58,7 @@ class GiftService:
         recommendations = [
             GiftRecommendation(
                 name=name,
-                price=0,
-                category="General",
-                reason="AI-generated suggestion",
+                price="Unknown",
                 url=None,
                 image=None,
             )
@@ -69,10 +66,3 @@ class GiftService:
         ]
 
         return (recommendations)[:5]
-
-    async def _get_fallback_ai_recommendations(
-        self, request
-    ) -> List[GiftRecommendation]:
-        """Fallback to a draft implementation if requests fail"""
-        # ... (keep your existing OpenAI implementation) ...
-        # not implemented and not sure if it needs to be
