@@ -66,4 +66,3 @@ class GiftService:
         ]
 
         return (recommendations)[:5]
-

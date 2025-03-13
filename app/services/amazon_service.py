@@ -1,6 +1,7 @@
 import requests
 from app.config import settings
 
+
 async def search_amazon(query, budget):
     url = "https://real-time-amazon-data.p.rapidapi.com/search"
 
@@ -10,12 +11,12 @@ async def search_amazon(query, budget):
         "query": query,
         "min_price": min_price,
         "max_price": budget,
-        "country": "US"
+        "country": "US",
     }
 
     headers = {
         "X-RapidAPI-Key": settings.amazon_api_key,
-        "X-RapidAPI-Host": "real-time-amazon-data.p.rapidapi.com"
+        "X-RapidAPI-Host": "real-time-amazon-data.p.rapidapi.com",
     }
 
     response = requests.get(url, headers=headers, params=querystring)
@@ -30,8 +31,12 @@ async def search_amazon(query, budget):
 
         sorted_products = sorted(
             products,
-            key=lambda x: float(x.get("product_star_rating")) if x.get("product_star_rating") is not None else 0.0,
-            reverse=True
+            key=lambda x: (
+                float(x.get("product_star_rating"))
+                if x.get("product_star_rating") is not None
+                else 0.0
+            ),
+            reverse=True,
         )
 
         top_product = sorted_products[0] if sorted_products else None
@@ -40,7 +45,7 @@ async def search_amazon(query, budget):
             return (
                 top_product.get("product_price"),
                 top_product.get("product_url"),
-                top_product.get("product_photo")
+                top_product.get("product_photo"),
             )
-        
+
     return None, None, None

@@ -8,7 +8,7 @@ def test_gift_recommendation_required_fields():
         "name": "Tennis Racket",
         "price": 150.00,
         "category": "sport",
-        "reason": "Suitable for tennis enthusiasts"
+        "reason": "Suitable for tennis enthusiasts",
     }
     recommendation = GiftRecommendation(**data)
     assert recommendation.name == "Tennis Racket"
@@ -24,7 +24,7 @@ def test_gift_recommendation_optional_fields():
         "category": "sport",
         "reason": "Suitable for tennis enthusiasts",
         "url": "http://example.com/tennis-racket",
-        "image": "http://example.com/tennis-racket.jpg"
+        "image": "http://example.com/tennis-racket.jpg",
     }
     recommendation = GiftRecommendation(**data)
     assert recommendation.url == "http://example.com/tennis-racket"
@@ -35,7 +35,7 @@ def test_gift_recommendation_missing_required_fields():
     data = {
         "price": 150.00,
         "category": "sport",
-        "reason": "Suitable for tennis enthusiasts"
+        "reason": "Suitable for tennis enthusiasts",
     }
     with pytest.raises(ValidationError):
         GiftRecommendation(**data)
@@ -46,7 +46,7 @@ def test_gift_recommendation_invalid_price():
         "name": "Tennis Racket",
         "price": "invalid_price",
         "category": "sport",
-        "reason": "Suitable for tennis enthusiasts"
+        "reason": "Suitable for tennis enthusiasts",
     }
     with pytest.raises(ValidationError):
         GiftRecommendation(**data)
