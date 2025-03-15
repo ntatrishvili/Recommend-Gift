@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from app.database.session import engine, Base
-from app.schemas import GiftRequest, RecommendationResponse
+from app.schemas import GiftRequest, AmazonGiftRequest, RecommendationResponse, RecommendationUsingAIResponse, RecommendationUsingAmazonResponse
 from app.services.ai_service import GiftService
-from app.services.amazon_service import search_amazon
+from app.services.amazon_service import search_amazon, search_amazon_only
 from app.database.session import get_db
 from app.database.models import GiftSearchLog
 from contextlib import asynccontextmanager
@@ -62,3 +62,49 @@ async def recommend_gifts(request: GiftRequest, db: AsyncSession = Depends(get_d
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Recommendation failed: {str(e)}")
+    
+@app.post("/recommend-using-only-ai", response_model=RecommendationUsingAIResponse)
+async def recommend_using_only_ai(request: GiftRequest, db: AsyncSession = Depends(get_db)):
+    search_id = str(uuid.uuid4())
+    service = GiftService()
+
+    try:
+        # Generate recommendations using AI only
+        recommendations = await service.generate_recommendations(request)
+        recommendation_list = []
+        for recommendation in recommendations:
+            recommendation_list.append(recommendation.name)
+            
+        # Log to database
+        log_entry = GiftSearchLog(
+            id=search_id,
+            search_params=request.model_dump(),
+            recommendations=[r.model_dump() for r in recommendations],
+        )
+        db.add(log_entry)
+        await db.commit()
+        
+        return {"recommendations": recommendation_list}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI recommendation failed: {str(e)}")
+
+@app.post("/recommend-using-only-amazon", response_model=RecommendationUsingAmazonResponse)
+async def recommend_using_only_amazon(request: AmazonGiftRequest, db: AsyncSession = Depends(get_db)):
+    search_id = str(uuid.uuid4())
+    
+    try:
+        recommendations = await search_amazon_only(request.query, request.budget)
+        # Log to database
+        log_entry = GiftSearchLog(
+            id=search_id,
+            search_params=request.model_dump(),
+            recommendations=[r for r in recommendations],
+        )
+        db.add(log_entry)
+        await db.commit()
+
+        return {"recommendations": recommendations}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Amazon recommendation failed: {str(e)}")

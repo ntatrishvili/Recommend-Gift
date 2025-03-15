@@ -16,7 +16,10 @@ class GiftRequest(BaseModel):
         None,
         json_schema_extra={"example": "Only eco-friendly products, no food items"},
     )
-
+    
+class AmazonGiftRequest(BaseModel):
+    query: str = Field(..., json_schema_extra={"example": "blow dryer"})
+    budget: float = Field(..., json_schema_extra={"example": 100.00})
 
 class GiftRecommendation(BaseModel):
     name: str
@@ -28,3 +31,9 @@ class GiftRecommendation(BaseModel):
 class RecommendationResponse(BaseModel):
     recommendations: List[GiftRecommendation]
     search_id: str
+    
+class RecommendationUsingAIResponse(BaseModel):
+    recommendations: List[str]
+
+class RecommendationUsingAmazonResponse(BaseModel):
+    recommendations: List[GiftRecommendation]
