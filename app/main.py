@@ -72,40 +72,44 @@ async def recommend_gift_with_double_call(request: GiftRequest, db: AsyncSession
         # Generate recommendations
         recommendations = await service.generate_recommendations(request)
         recommendation_list = [recommendation.name for recommendation in recommendations]
-
+        print(recommendation_list)
+        print("________________")
+        
         real_recommendations = []
         for recommendation in recommendation_list:
-            # Ensure products is ALWAYS a list (never None)
-            products = await basic_search_amazon(recommendation, request.budget) or []  # Default to empty list
+            products = await basic_search_amazon(recommendation, request.budget)
 
-            # Sort products safely
-            sorted_products = sorted(
-                products,
-                key=lambda x: float(x.get("product_star_rating")) if x.get("product_star_rating") is not None else 0.0,
-                reverse=True
-            )
-            # Slice the top 25 (even if empty)
-            sorted_products = sorted_products[:25]  # Always a list, no "else None"
-
-            if sorted_products:  # Proceed only if there are products
-                chosen_product = await service.choose_products_based_on_preferences(
-                    request.preference, sorted_products
+            if products:
+                sorted_products = sorted(
+                    products,
+                    key=lambda x: float(x.get("product_star_rating")) if x.get("product_star_rating") is not None else 0.0,
+                    reverse=True
                 )
-                if chosen_product:
-                    real_recommendations.append(
-                        GiftRecommendation(
-                            title=chosen_product.get("product_title"),
-                            price=chosen_product.get("product_price"),
-                            url=chosen_product.get("product_url"),
-                            image=chosen_product.get("product_photo")
-                        )
+                sorted_products = sorted_products[:25]
+                print(sorted_products)
+                print("________________")
+
+                if sorted_products:
+                    chosen_product = await service.choose_products_based_on_preferences(
+                        request.preference, sorted_products
                     )
+                    print(chosen_product)
+                    print("________________")
+                    if chosen_product:
+                        real_recommendations.append(
+                            GiftRecommendation(
+                                name=chosen_product.get("product_title"),
+                                price=chosen_product.get("product_price"),
+                                url=chosen_product.get("product_url"),
+                                image=chosen_product.get("product_photo")
+                            )
+                        )
 
         # Log to database
         log_entry = GiftSearchLog(
             id=search_id,
             search_params=request.model_dump(),
-            recommendations=[r.model_dump() for r in recommendations],
+            recommendations=[r.model_dump() for r in real_recommendations],
         )
         db.add(log_entry)
         await db.commit()

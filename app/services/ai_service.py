@@ -14,7 +14,7 @@ class GiftService:
             raise ValueError("Missing OpenAI API key")
 
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.gpt_model = "gpt-4"
+        self.gpt_model = "gpt-3.5-turbo-0125"
 
     async def generate_recommendations(self, request) -> List[GiftRecommendation]:
         """Generate recommendations using OpenAI"""
@@ -69,10 +69,26 @@ class GiftService:
 
     async def choose_products_based_on_preferences(self, preference, products) -> dict:
         """Get product names from OpenAI"""
-        prompt = f"""Choose the best option based on the following preferences: {preference}
-        from the following list: {products}.
-
-        Return ONLY a JSON OBJECT of the chosen product (no arrays)."""
+        prompt = f""""You are an intelligent product selector. Given a list of Amazon products: {products} in JSON format and a user's 
+        gift preferences: {preference}, select the single best product that matches the criteria.
+        Instructions:
+        Analyze the list of products based on the provided criteria, such as price range, brand, rating, Prime eligibility, and other factors given
+        in the user's request.
+        Choose the product that best matches all or most of the criteria.
+        If multiple products are equally suitable, select the one with the highest rating and number of reviews.
+        Return the selected product in JSON format with the following keys:
+        product_title
+        product_price
+        product_url
+        product_photo
+        
+        YOUR RESPONSE DOESN'T NEED TO INCLUDE EXPLANATION OR JUSTIFICATION. ONLY WRITE SELECTED PRODUCT IN JSON FORMAT LIKE BELOW:
+        {{
+            "product_title": "Product 1",
+            "product_price": "100.00",
+            "product_url": "https://www.amazon.com/product1",
+            "product_photo": "https://www.amazon.com/product1.jpg"
+        }}"""
 
         response = await self.client.chat.completions.create(
             model=self.gpt_model,
@@ -82,10 +98,7 @@ class GiftService:
 
         try:
             result = json.loads(response.choices[0].message.content)
-            # Handle case where response is a list
-            if isinstance(result, list):
-                return result[0] if result else {}
             return result
         except (json.JSONDecodeError, AttributeError, IndexError) as e:
             logger.error(f"Failed to parse OpenAI response: {str(e)}")
-            return {}  # Return empty dict instead of list   
+            return {} 
