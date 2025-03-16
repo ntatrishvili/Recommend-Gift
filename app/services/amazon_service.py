@@ -93,3 +93,36 @@ async def search_amazon_only(query, budget):
             return list_of_products
         
     return []
+
+async def basic_search_amazon(query, budget):
+    url = "https://real-time-amazon-data.p.rapidapi.com/search"
+
+    min_price = budget * 0.8
+
+    querystring = {
+        "query": query,
+        "min_price": min_price,
+        "max_price": budget,
+        "country": "US"
+    }
+
+    headers = {
+        "X-RapidAPI-Key": settings.amazon_api_key,
+        "X-RapidAPI-Host": "real-time-amazon-data.p.rapidapi.com"
+    }
+
+    response = requests.get(url, headers=headers, params=querystring)
+
+    if response.status_code == 200:
+        data = response.json()
+        # Check if data and products exist to avoid KeyError
+        if not data.get("data", {}).get("products"):
+            return None
+
+        products = data["data"]["products"]
+
+        if products:
+            return products
+        
+        else:
+            return None

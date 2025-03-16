@@ -12,10 +12,12 @@ class GiftRequest(BaseModel):
     relationship: Optional[str] = Field(
         None, json_schema_extra={"example": "friend"}
     )
+    preference: Optional[str] = Field(None, json_schema_extra={"example": "take into consideration price, brand, rating when choosing the present"})
     additional_preferences: Optional[str] = Field(
         None,
         json_schema_extra={"example": "Only eco-friendly products, no food items"},
     )
+
     
 class AmazonGiftRequest(BaseModel):
     query: str = Field(..., json_schema_extra={"example": "blow dryer"})

@@ -67,3 +67,25 @@ class GiftService:
 
         return (recommendations)[:5]
 
+    async def choose_products_based_on_preferences(self, preference, products) -> dict:
+        """Get product names from OpenAI"""
+        prompt = f"""Choose the best option based on the following preferences: {preference}
+        from the following list: {products}.
+
+        Return ONLY a JSON OBJECT of the chosen product (no arrays)."""
+
+        response = await self.client.chat.completions.create(
+            model=self.gpt_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
+
+        try:
+            result = json.loads(response.choices[0].message.content)
+            # Handle case where response is a list
+            if isinstance(result, list):
+                return result[0] if result else {}
+            return result
+        except (json.JSONDecodeError, AttributeError, IndexError) as e:
+            logger.error(f"Failed to parse OpenAI response: {str(e)}")
+            return {}  # Return empty dict instead of list   
