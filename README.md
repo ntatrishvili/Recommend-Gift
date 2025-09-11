@@ -1,8 +1,8 @@
-# Gift Recommendation API 🎁
+# Gift Recommendation API 
 
 A smart gift recommendation engine that uses OpenAI's AI capabilities combined with Amazon's product catalog to suggest perfect gifts based on personalized criteria.
 
-## Features ✨
+## Features 
 
 - **AI-Powered Recommendations**: Uses OpenAI to understand nuanced preferences and suggest thoughtful gifts
 - **Amazon Integration**: Recommends real, purchasable products from Amazon
@@ -13,7 +13,7 @@ A smart gift recommendation engine that uses OpenAI's AI capabilities combined w
   - Occasion (birthday, anniversary, holiday, etc.)
 - **Simple API Interface**: Easy-to-use endpoints for integration with your applications
 
-## How It Works ⚙️
+## How It Works 
 
 1. User provides details about:
    - Who they're shopping for
@@ -25,7 +25,7 @@ A smart gift recommendation engine that uses OpenAI's AI capabilities combined w
 3. The Amazon API is queried for real products matching these ideas
 4. Curated recommendations are returned to the user
 
-## Installation & Setup 🛠️
+## Installation & Setup 
 
 ### Prerequisites
 - Python 3.8+
@@ -59,7 +59,7 @@ AMAZON_ASSOCIATE_TAG=your_associate_tag
 uvicorn main:app --reload
 ```
 
-## API Endpoints 🌐
+## API Endpoints 
 
 ### Get Gift Recommendations
 `POST /recommendations`
@@ -101,7 +101,7 @@ uvicorn main:app --reload
 }
 ```
 
-## Example Usage 🚀
+## Example Usage
 
 ```python
 import requests
@@ -120,7 +120,7 @@ response = requests.post(url, json=data)
 print(response.json())
 ```
 
-## Contributing 🤝
+## Contributing
 Contributions are welcome! Please fork the repository and submit a pull request with your improvements.
 
 ## Contact 📧
